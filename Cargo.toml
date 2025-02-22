@@ -1,0 +1,23 @@
+[package]
+name = "toroid"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+repository = "https://github.com/cainthebest/toroid"
+authors = ["cainthebest <https://github.com/cainthebest>"]
+description = "Toroid is a no_std ASCII renderer made to show donuts. This library animates 3D ASCII donuts, perfect for demos, embedded systems, or just for fun."
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+libm = "0.2"
+
+[profile.release]
+opt-level = 3
+debug = false
+rpath = true
+lto = 'fat'
+codegen-units = 1
+
+[profile.release.package."*"]
+opt-level = 3
