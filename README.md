@@ -1,4 +1,4 @@
 # Toroid
 
 ## Example:
-![donut](https://github.com/user-attachments/assets/fd2b9494-686d-41d3-8512-0743b348895c)
+![donut](https://github.com/user-attachments/assets/d7e3567a-c9f3-4984-ae17-6f9cb5c2f252)
