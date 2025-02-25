@@ -11,6 +11,9 @@ pub struct Donut<
     const WIDTH: u8 = 80,
     const HEIGHT: u8 = 22,
     //
+    const VIEWER_DISTANCE: u8 = 5,
+    const BRIGHTNESS_FACTOR: u8 = 8,
+    //
     const J_STEP_VALUE: u8 = 7,
     const J_STEP_DENOM: u8 = 100,
     const I_STEP_VALUE: u8 = 2,
@@ -43,6 +46,9 @@ impl<
     const WIDTH: u8,
     const HEIGHT: u8,
     //
+    const VIEWER_DISTANCE: u8,
+    const BRIGHTNESS_FACTOR: u8,
+    //
     const J_STEP_VALUE: u8,
     const J_STEP_DENOM: u8,
     const I_STEP_VALUE: u8,
@@ -65,6 +71,8 @@ impl<
     Donut<
         WIDTH,
         HEIGHT,
+        VIEWER_DISTANCE,
+        BRIGHTNESS_FACTOR,
         J_STEP_VALUE,
         J_STEP_DENOM,
         I_STEP_VALUE,
@@ -111,9 +119,6 @@ impl<
 
     const X_SCALE: f32 = 30.0 * (WIDTH as f32 / 80.0);
     const Y_SCALE: f32 = 15.0 * (HEIGHT as f32 / 22.0);
-
-    const VIEWER_DISTANCE: f32 = 5.0;
-    const BRIGHTNESS_FACTOR: f32 = 8.0;
 
     const BRIGHTNESS_RAMP: [char; 13] = [C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, C11, C12];
 
@@ -179,7 +184,7 @@ impl<
             for _ in 0..Self::NUM_I {
                 let h = j_cos + 2.0;
                 let t = i_sin * h * ca - j_sin * sa;
-                let d = 1.0 / (i_sin * h * sa + j_sin * ca + Self::VIEWER_DISTANCE);
+                let d = 1.0 / (i_sin * h * sa + j_sin * ca + VIEWER_DISTANCE as f32);
 
                 let x = (Self::X_CENTER + Self::X_SCALE * d * (i_cos * h * cb - t * sb)) as isize;
                 let y = (Self::Y_CENTER + Self::Y_SCALE * d * (i_cos * h * sb + t * cb)) as isize;
@@ -190,7 +195,7 @@ impl<
                     if d > zbuf[idx] {
                         zbuf[idx] = d;
 
-                        let n = (Self::BRIGHTNESS_FACTOR
+                        let n = (BRIGHTNESS_FACTOR as f32
                             * ((j_sin * sa - i_sin * j_cos * ca) * cb
                                 - i_sin * j_cos * sa
                                 - j_sin * ca
