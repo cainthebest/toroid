@@ -20,17 +20,18 @@ pub struct Donut<
     const I_STEP_DENOM: u8 = 100,
     //
     const CHAR_BRIGHTNESS_0: char = ' ',
-    const CHAR_BRIGHTNESS_1: char = ',',
-    const CHAR_BRIGHTNESS_2: char = '-',
-    const CHAR_BRIGHTNESS_3: char = '~',
-    const CHAR_BRIGHTNESS_4: char = ':',
-    const CHAR_BRIGHTNESS_5: char = ';',
-    const CHAR_BRIGHTNESS_6: char = '=',
-    const CHAR_BRIGHTNESS_7: char = '!',
-    const CHAR_BRIGHTNESS_8: char = '*',
-    const CHAR_BRIGHTNESS_9: char = '#',
-    const CHAR_BRIGHTNESS_10: char = '$',
-    const CHAR_BRIGHTNESS_11: char = '@',
+    const CHAR_BRIGHTNESS_1: char = '.',
+    const CHAR_BRIGHTNESS_2: char = ',',
+    const CHAR_BRIGHTNESS_3: char = '-',
+    const CHAR_BRIGHTNESS_4: char = '~',
+    const CHAR_BRIGHTNESS_5: char = ':',
+    const CHAR_BRIGHTNESS_6: char = ';',
+    const CHAR_BRIGHTNESS_7: char = '=',
+    const CHAR_BRIGHTNESS_8: char = '!',
+    const CHAR_BRIGHTNESS_9: char = '*',
+    const CHAR_BRIGHTNESS_10: char = '#',
+    const CHAR_BRIGHTNESS_11: char = '$',
+    const CHAR_BRIGHTNESS_12: char = '@',
 > {
     /// Rotation angle A (around the vertical axis)
     pub a: f32,
@@ -41,10 +42,12 @@ pub struct Donut<
 impl<
     const WIDTH: u8,
     const HEIGHT: u8,
+    //
     const J_STEP_VALUE: u8,
     const J_STEP_DENOM: u8,
     const I_STEP_VALUE: u8,
     const I_STEP_DENOM: u8,
+    //
     const C0: char,
     const C1: char,
     const C2: char,
@@ -57,6 +60,7 @@ impl<
     const C9: char,
     const C10: char,
     const C11: char,
+    const C12: char,
 >
     Donut<
         WIDTH,
@@ -77,6 +81,7 @@ impl<
         C9,
         C10,
         C11,
+        C12,
     >
 {
     /// Step size for the outer loop (angle j) over the donut's circular cross section.
@@ -92,7 +97,7 @@ impl<
     };
 
     /// Brightness ramp used to select an ASCII character based on lighting.
-    const BRIGHTNESS_RAMP: [char; 12] = [C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, C11];
+    const BRIGHTNESS_RAMP: [char; 13] = [C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, C11, C12];
 
     /// Create a new donut with initial rotation angles set to 0.0.
     pub const fn new() -> Self {
@@ -147,7 +152,7 @@ impl<
                             * ((u * sa - w * v * ca) * cb - w * v * sa - u * ca - c * v * sb))
                             as isize;
 
-                        output[idx] = Self::BRIGHTNESS_RAMP[n.clamp(0, 11) as usize];
+                        output[idx] = Self::BRIGHTNESS_RAMP[n.clamp(0, 12) as usize];
                     }
                 }
 
