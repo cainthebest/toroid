@@ -64,7 +64,7 @@ fn main() {
         handle.flush().unwrap();
 
         // Rotate for the next frame and sleep briefly.
-        donut.rotate(0.07, 0.03);
+        donut.rotate(0.035, 0.015);
         sleep(Duration::from_millis(20));
     }
 }
