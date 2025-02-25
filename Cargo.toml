@@ -7,6 +7,8 @@ repository = "https://github.com/cainthebest/toroid"
 authors = ["cainthebest <https://github.com/cainthebest>"]
 description = "Toroid is a no_std ASCII renderer made to show donuts. This library animates 3D ASCII donuts, perfect for demos, embedded systems, or just for fun."
 
+[dev-dependencies]
+criterion = { version = "0.5", features = ["html_reports"] }
 
 [profile.release]
 opt-level = 3
@@ -20,3 +22,7 @@ opt-level = 3
 
 [[example]]
 name = "std_console"
+
+[[bench]]
+name = "benchmark"
+harness = false
