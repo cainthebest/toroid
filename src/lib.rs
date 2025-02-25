@@ -1,9 +1,6 @@
 #![no_std]
 
-use {
-    core::f32::consts::TAU,
-    libm::{cosf, sinf},
-};
+use core::f32::consts::TAU;
 
 /// A configurable "Donut" that can render ASCII frames without `std`.
 ///
@@ -33,10 +30,13 @@ pub struct Donut<
     const CHAR_BRIGHTNESS_11: char = '$',
     const CHAR_BRIGHTNESS_12: char = '@',
 > {
-    /// Rotation angle A (around the vertical axis)
-    pub a: f32,
-    /// Rotation angle B (around the horizontal axis)
-    pub b: f32,
+    // Rotation angle A (vertical axis)
+    pub a_cos: f32,
+    pub a_sin: f32,
+
+    // Rotation angle B (horizontal axis)
+    pub b_cos: f32,
+    pub b_sin: f32,
 }
 
 impl<
@@ -84,32 +84,75 @@ impl<
         C12,
     >
 {
-    /// Step size for the outer loop (angle j) over the donut's circular cross section.
     const J_STEP: f32 = match J_STEP_DENOM {
         0 | 1 => J_STEP_VALUE as f32,
         _ => (J_STEP_VALUE as f32) / (J_STEP_DENOM as f32),
     };
 
-    /// Step size for the inner loop (angle i) over the donut's circular tube.
     const I_STEP: f32 = match I_STEP_DENOM {
         0 | 1 => I_STEP_VALUE as f32,
         _ => (I_STEP_VALUE as f32) / (I_STEP_DENOM as f32),
     };
 
-    /// Brightness ramp used to select an ASCII character based on lighting.
+    const NUM_J: usize = {
+        let x = TAU / Self::J_STEP;
+        let n = x as usize;
+        if x > n as f32 { n + 1 } else { n }
+    };
+
+    const NUM_I: usize = {
+        let x = TAU / Self::I_STEP;
+        let n = x as usize;
+        if x > n as f32 { n + 1 } else { n }
+    };
+
+    const X_CENTER: f32 = WIDTH as f32 / 2.0;
+    const Y_CENTER: f32 = HEIGHT as f32 / 2.0;
+
+    const X_SCALE: f32 = 30.0 * (WIDTH as f32 / 80.0);
+    const Y_SCALE: f32 = 15.0 * (HEIGHT as f32 / 22.0);
+
+    const VIEWER_DISTANCE: f32 = 5.0;
+    const BRIGHTNESS_FACTOR: f32 = 8.0;
+
     const BRIGHTNESS_RAMP: [char; 13] = [C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10, C11, C12];
 
-    /// Create a new donut with initial rotation angles set to 0.0.
+    /// Create a new donut with initial rotation values set to represent 0 (cosine=1, sine=0).
     pub const fn new() -> Self {
-        Self { a: 0.0, b: 0.0 }
+        Self {
+            a_cos: 1.0,
+            a_sin: 0.0,
+            b_cos: 1.0,
+            b_sin: 0.0,
+        }
     }
 
     /// Increment the rotation angles by `da` and `db`.
     ///
     /// Rotating the donut creates the animation effect.
     pub fn rotate(&mut self, da: f32, db: f32) {
-        self.a += da;
-        self.b += db;
+        {
+            let temp = self.a_cos;
+
+            self.a_cos -= da * self.a_sin;
+            self.a_sin += da * temp;
+
+            let norm = (3.0 - (self.a_cos * self.a_cos + self.a_sin * self.a_sin)) / 2.0;
+
+            self.a_cos *= norm;
+            self.a_sin *= norm;
+        }
+        {
+            let temp = self.b_cos;
+
+            self.b_cos -= db * self.b_sin;
+            self.b_sin += db * temp;
+
+            let norm = (3.0 - (self.b_cos * self.b_cos + self.b_sin * self.b_sin)) / 2.0;
+
+            self.b_cos *= norm;
+            self.b_sin *= norm;
+        }
     }
 
     /// **Render** one ASCII frame **in-place**:
@@ -123,24 +166,23 @@ impl<
         output.fill(C0);
         zbuf.fill(0.0);
 
-        let (sa, ca) = (sinf(self.a), cosf(self.a));
-        let (sb, cb) = (sinf(self.b), cosf(self.b));
+        let (sa, ca) = (self.a_sin, self.a_cos);
+        let (sb, cb) = (self.b_sin, self.b_cos);
 
-        let mut j = 0.0;
-        while j < TAU {
-            let (u, v) = (sinf(j), cosf(j));
+        let mut j_cos = 1.0;
+        let mut j_sin = 0.0;
 
-            let mut i = 0.0;
-            while i < TAU {
-                let (w, c) = (sinf(i), cosf(i));
+        for _ in 0..Self::NUM_J {
+            let mut i_cos = 1.0;
+            let mut i_sin = 0.0;
 
-                let h = v + 2.0;
+            for _ in 0..Self::NUM_I {
+                let h = j_cos + 2.0;
+                let t = i_sin * h * ca - j_sin * sa;
+                let d = 1.0 / (i_sin * h * sa + j_sin * ca + Self::VIEWER_DISTANCE);
 
-                let d = 1.0 / (w * h * sa + u * ca + 5.0);
-                let t = w * h * ca - u * sa;
-
-                let x = (40.0 + 30.0 * d * (c * h * cb - t * sb)) as isize;
-                let y = (12.0 + 15.0 * d * (c * h * sb + t * cb)) as isize;
+                let x = (Self::X_CENTER + Self::X_SCALE * d * (i_cos * h * cb - t * sb)) as isize;
+                let y = (Self::Y_CENTER + Self::Y_SCALE * d * (i_cos * h * sb + t * cb)) as isize;
 
                 if x >= 0 && x < WIDTH as isize && y >= 0 && y < HEIGHT as isize {
                     let idx = (y * (WIDTH as isize) + x) as usize;
@@ -148,18 +190,38 @@ impl<
                     if d > zbuf[idx] {
                         zbuf[idx] = d;
 
-                        let n = (8.0
-                            * ((u * sa - w * v * ca) * cb - w * v * sa - u * ca - c * v * sb))
-                            as isize;
+                        let n = (Self::BRIGHTNESS_FACTOR
+                            * ((j_sin * sa - i_sin * j_cos * ca) * cb
+                                - i_sin * j_cos * sa
+                                - j_sin * ca
+                                - i_cos * j_cos * sb)) as isize;
 
                         output[idx] = Self::BRIGHTNESS_RAMP[n.clamp(0, 12) as usize];
                     }
                 }
+                {
+                    let temp = i_cos;
 
-                i += Self::I_STEP;
+                    i_cos -= Self::I_STEP * i_sin;
+                    i_sin += Self::I_STEP * temp;
+
+                    let norm = (3.0 - (i_cos * i_cos + i_sin * i_sin)) / 2.0;
+
+                    i_cos *= norm;
+                    i_sin *= norm;
+                }
             }
+            {
+                let temp = j_cos;
 
-            j += Self::J_STEP;
+                j_cos -= Self::J_STEP * j_sin;
+                j_sin += Self::J_STEP * temp;
+
+                let norm = (3.0 - (j_cos * j_cos + j_sin * j_sin)) / 2.0;
+
+                j_cos *= norm;
+                j_sin *= norm;
+            }
         }
     }
 }
